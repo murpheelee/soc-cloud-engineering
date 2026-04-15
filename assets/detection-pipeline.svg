@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117"/>
+      <stop offset="100%" style="stop-color:#161b22"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="200" rx="12" fill="url(#bg2)"/>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" fill="#8b949e" font-size="12" font-weight="600" letter-spacing="2">DETECTION &amp; RESPONSE PIPELINE</text>
+
+  <!-- Step 1: Ingest -->
+  <rect x="20" y="55" width="130" height="90" rx="10" fill="#1e1e2e" stroke="#FF9900" stroke-width="2"/>
+  <text x="85" y="82" text-anchor="middle" fill="#FF9900" font-size="22">📥</text>
+  <text x="85" y="102" text-anchor="middle" fill="white" font-size="12" font-weight="600">Ingest</text>
+  <text x="85" y="118" text-anchor="middle" fill="#8b949e" font-size="9">7+ Log Sources</text>
+  <text x="85" y="131" text-anchor="middle" fill="#8b949e" font-size="9">~7M Events/Day</text>
+
+  <!-- Arrow 1 -->
+  <polygon points="158,100 175,90 175,95 195,95 195,105 175,105 175,110" fill="#30363d"/>
+
+  <!-- Step 2: Normalize -->
+  <rect x="200" y="55" width="130" height="90" rx="10" fill="#1e1e2e" stroke="#0078D4" stroke-width="2"/>
+  <text x="265" y="82" text-anchor="middle" fill="#0078D4" font-size="22">⚙️</text>
+  <text x="265" y="102" text-anchor="middle" fill="white" font-size="12" font-weight="600">Normalize</text>
+  <text x="265" y="118" text-anchor="middle" fill="#8b949e" font-size="9">CIM Mapping</text>
+  <text x="265" y="131" text-anchor="middle" fill="#8b949e" font-size="9">Field Extraction</text>
+
+  <!-- Arrow 2 -->
+  <polygon points="338,100 355,90 355,95 375,95 375,105 355,105 355,110" fill="#30363d"/>
+
+  <!-- Step 3: Detect -->
+  <rect x="380" y="55" width="130" height="90" rx="10" fill="#1e1e2e" stroke="#E4002B" stroke-width="2"/>
+  <text x="445" y="82" text-anchor="middle" fill="#E4002B" font-size="22">🔍</text>
+  <text x="445" y="102" text-anchor="middle" fill="white" font-size="12" font-weight="600">Detect</text>
+  <text x="445" y="118" text-anchor="middle" fill="#8b949e" font-size="9">16 SPL Rules</text>
+  <text x="445" y="131" text-anchor="middle" fill="#8b949e" font-size="9">MITRE Mapped</text>
+
+  <!-- Arrow 3 -->
+  <polygon points="518,100 535,90 535,95 555,95 555,105 535,105 535,110" fill="#30363d"/>
+
+  <!-- Step 4: Automate -->
+  <rect x="560" y="55" width="130" height="90" rx="10" fill="#1e1e2e" stroke="#FF6600" stroke-width="2"/>
+  <text x="625" y="82" text-anchor="middle" fill="#FF6600" font-size="22">⚡</text>
+  <text x="625" y="102" text-anchor="middle" fill="white" font-size="12" font-weight="600">Automate</text>
+  <text x="625" y="118" text-anchor="middle" fill="#8b949e" font-size="9">SOAR Playbooks</text>
+  <text x="625" y="131" text-anchor="middle" fill="#8b949e" font-size="9">68% Auto-Rate</text>
+
+  <!-- Arrow 4 -->
+  <polygon points="698,100 715,90 715,95 735,95 735,105 715,105 715,110" fill="#30363d"/>
+
+  <!-- Step 5: Respond -->
+  <rect x="740" y="55" width="140" height="90" rx="10" fill="#1e1e2e" stroke="#00C176" stroke-width="2"/>
+  <text x="810" y="82" text-anchor="middle" fill="#00C176" font-size="22">🛡️</text>
+  <text x="810" y="102" text-anchor="middle" fill="white" font-size="12" font-weight="600">Respond</text>
+  <text x="810" y="118" text-anchor="middle" fill="#8b949e" font-size="9">Contain · Notify</text>
+  <text x="810" y="131" text-anchor="middle" fill="#8b949e" font-size="9">MTTR: 24 min</text>
+
+  <!-- Bottom Metrics Bar -->
+  <rect x="20" y="162" width="860" height="25" rx="6" fill="#1e1e2e" stroke="#30363d" stroke-width="1"/>
+  <text x="130" y="179" text-anchor="middle" fill="#FF9900" font-size="10" font-weight="600">MTTD: 11 min</text>
+  <text x="310" y="179" text-anchor="middle" fill="#0078D4" font-size="10" font-weight="600">False Positive: 12%</text>
+  <text x="500" y="179" text-anchor="middle" fill="#E4002B" font-size="10" font-weight="600">Alert Ratio: 15:1</text>
+  <text x="680" y="179" text-anchor="middle" fill="#FF6600" font-size="10" font-weight="600">Automation: 68%</text>
+  <text x="830" y="179" text-anchor="middle" fill="#00C176" font-size="10" font-weight="600">MTTR: 24 min</text>
+</svg>

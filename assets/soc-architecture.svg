@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0078D4"/>
+      <stop offset="100%" style="stop-color:#00BCF2"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1e2e"/>
+      <stop offset="100%" style="stop-color:#14141e"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="520" rx="12" fill="#0d1117"/>
+
+  <!-- Title Bar -->
+  <rect width="900" height="50" rx="12" fill="url(#headerGrad)"/>
+  <rect y="38" width="900" height="12" fill="url(#headerGrad)"/>
+  <text x="450" y="32" text-anchor="middle" fill="white" font-size="18" font-weight="600">SOC Cloud Engineering — Architecture Overview</text>
+
+  <!-- Row 1: Log Sources -->
+  <text x="450" y="82" text-anchor="middle" fill="#8b949e" font-size="11" font-weight="600" letter-spacing="2">LOG SOURCES</text>
+
+  <!-- AWS -->
+  <rect x="30" y="95" width="120" height="55" rx="8" fill="url(#cardGrad)" stroke="#FF9900" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="90" y="117" text-anchor="middle" fill="#FF9900" font-size="11" font-weight="600">AWS</text>
+  <text x="90" y="133" text-anchor="middle" fill="#8b949e" font-size="9">CloudTrail · VPC</text>
+  <text x="90" y="144" text-anchor="middle" fill="#8b949e" font-size="9">GuardDuty</text>
+
+  <!-- Azure -->
+  <rect x="170" y="95" width="120" height="55" rx="8" fill="url(#cardGrad)" stroke="#0078D4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="230" y="117" text-anchor="middle" fill="#0078D4" font-size="11" font-weight="600">Azure</text>
+  <text x="230" y="133" text-anchor="middle" fill="#8b949e" font-size="9">Activity · NSG</text>
+  <text x="230" y="144" text-anchor="middle" fill="#8b949e" font-size="9">Defender</text>
+
+  <!-- Endpoints -->
+  <rect x="310" y="95" width="120" height="55" rx="8" fill="url(#cardGrad)" stroke="#E4002B" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="370" y="117" text-anchor="middle" fill="#E4002B" font-size="11" font-weight="600">Endpoints</text>
+  <text x="370" y="133" text-anchor="middle" fill="#8b949e" font-size="9">CrowdStrike</text>
+  <text x="370" y="144" text-anchor="middle" fill="#8b949e" font-size="9">Sysmon</text>
+
+  <!-- Identity -->
+  <rect x="450" y="95" width="120" height="55" rx="8" fill="url(#cardGrad)" stroke="#00C176" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="510" y="117" text-anchor="middle" fill="#00C176" font-size="11" font-weight="600">Identity</text>
+  <text x="510" y="133" text-anchor="middle" fill="#8b949e" font-size="9">Okta SSO</text>
+  <text x="510" y="144" text-anchor="middle" fill="#8b949e" font-size="9">Azure AD</text>
+
+  <!-- Qualys -->
+  <rect x="590" y="95" width="120" height="55" rx="8" fill="url(#cardGrad)" stroke="#ED2024" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="650" y="117" text-anchor="middle" fill="#ED2024" font-size="11" font-weight="600">Qualys</text>
+  <text x="650" y="133" text-anchor="middle" fill="#8b949e" font-size="9">VMDR</text>
+  <text x="650" y="144" text-anchor="middle" fill="#8b949e" font-size="9">Vuln Feed</text>
+
+  <!-- Email -->
+  <rect x="730" y="95" width="140" height="55" rx="8" fill="url(#cardGrad)" stroke="#742774" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="800" y="117" text-anchor="middle" fill="#742774" font-size="11" font-weight="600">Email Gateway</text>
+  <text x="800" y="133" text-anchor="middle" fill="#8b949e" font-size="9">Proofpoint</text>
+  <text x="800" y="144" text-anchor="middle" fill="#8b949e" font-size="9">M365 Defender</text>
+
+  <!-- Connector Lines Row 1 to Row 2 -->
+  <line x1="90" y1="150" x2="90" y2="185" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="230" y1="150" x2="230" y2="185" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="370" y1="150" x2="370" y2="185" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="510" y1="150" x2="510" y2="185" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="650" y1="150" x2="650" y2="185" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="800" y1="150" x2="800" y2="185" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Horizontal connector -->
+  <line x1="90" y1="185" x2="800" y2="185" stroke="#30363d" stroke-width="1.5"/>
+  <line x1="450" y1="185" x2="450" y2="205" stroke="#30363d" stroke-width="2"/>
+
+  <!-- Row 2: SIEM Layer -->
+  <text x="450" y="220" text-anchor="middle" fill="#8b949e" font-size="11" font-weight="600" letter-spacing="2">SIEM PLATFORM</text>
+
+  <!-- Splunk -->
+  <rect x="180" y="233" width="250" height="70" rx="10" fill="url(#cardGrad)" stroke="#58A6FF" stroke-width="2" filter="url(#shadow)"/>
+  <text x="305" y="258" text-anchor="middle" fill="white" font-size="14" font-weight="700">Splunk Enterprise</text>
+  <text x="305" y="275" text-anchor="middle" fill="#58A6FF" font-size="10">16 SPL Detection Rules</text>
+  <text x="305" y="290" text-anchor="middle" fill="#8b949e" font-size="9">Cloud · Identity · Endpoint</text>
+
+  <!-- QRadar -->
+  <rect x="470" y="233" width="250" height="70" rx="10" fill="url(#cardGrad)" stroke="#052FAD" stroke-width="2" filter="url(#shadow)"/>
+  <text x="595" y="258" text-anchor="middle" fill="white" font-size="14" font-weight="700">IBM QRadar</text>
+  <text x="595" y="275" text-anchor="middle" fill="#7EB8FF" font-size="10">AQL Cross-Reference</text>
+  <text x="595" y="290" text-anchor="middle" fill="#8b949e" font-size="9">Correlated Analytics</text>
+
+  <!-- Connector Lines Row 2 to Row 3 -->
+  <line x1="305" y1="303" x2="305" y2="330" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="595" y1="303" x2="595" y2="330" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="305" y1="330" x2="595" y2="330" stroke="#30363d" stroke-width="1.5"/>
+  <line x1="450" y1="330" x2="450" y2="350" stroke="#30363d" stroke-width="2"/>
+
+  <!-- Row 3: SOAR -->
+  <text x="450" y="365" text-anchor="middle" fill="#8b949e" font-size="11" font-weight="600" letter-spacing="2">SOAR AUTOMATION</text>
+
+  <rect x="220" y="378" width="460" height="55" rx="10" fill="url(#cardGrad)" stroke="#FF6600" stroke-width="2" filter="url(#shadow)"/>
+  <text x="450" y="401" text-anchor="middle" fill="white" font-size="14" font-weight="700">Splunk SOAR (Phantom)</text>
+  <text x="450" y="420" text-anchor="middle" fill="#FF9D4D" font-size="10">3 Automated Playbooks · 68% Automation Rate</text>
+
+  <!-- Connector Lines Row 3 to Row 4 -->
+  <line x1="320" y1="433" x2="320" y2="458" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="450" y1="433" x2="450" y2="458" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+  <line x1="580" y1="433" x2="580" y2="458" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Row 4: Response Actions -->
+  <rect x="250" y="458" width="130" height="42" rx="8" fill="url(#cardGrad)" stroke="#E4002B" stroke-width="1.5"/>
+  <text x="315" y="478" text-anchor="middle" fill="#E4002B" font-size="10" font-weight="600">Contain</text>
+  <text x="315" y="492" text-anchor="middle" fill="#8b949e" font-size="9">Isolate · Block</text>
+
+  <rect x="390" y="458" width="130" height="42" rx="8" fill="url(#cardGrad)" stroke="#00C176" stroke-width="1.5"/>
+  <text x="455" y="478" text-anchor="middle" fill="#00C176" font-size="10" font-weight="600">Enrich</text>
+  <text x="455" y="492" text-anchor="middle" fill="#8b949e" font-size="9">VT · AbuseIPDB</text>
+
+  <rect x="530" y="458" width="130" height="42" rx="8" fill="url(#cardGrad)" stroke="#58A6FF" stroke-width="1.5"/>
+  <text x="595" y="478" text-anchor="middle" fill="#58A6FF" font-size="10" font-weight="600">Notify</text>
+  <text x="595" y="492" text-anchor="middle" fill="#8b949e" font-size="9">SOC · Slack · Email</text>
+</svg>

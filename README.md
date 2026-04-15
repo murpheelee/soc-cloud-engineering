@@ -14,36 +14,21 @@
 
 Design and implement a SOC engineering workflow for a cloud-first organization, covering the full detection-to-response pipeline: log ingestion, detection engineering with Splunk SPL and QRadar, SOAR-driven automated response, vulnerability feed integration from Qualys, and cloud-native security monitoring. This project demonstrates the technical skills required for a SOC Cloud Engineer role.
 
+---
+
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                   SOC Cloud Platform                      │
-├──────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌────────────┐  ┌────────────┐  ┌────────────────────┐ │
-│  │   Splunk   │  │  QRadar    │  │     Qualys         │ │
-│  │   (SIEM)   │  │  (SIEM)    │  │  (Vuln Scanner)    │ │
-│  └─────┬──────┘  └─────┬──────┘  └────────┬───────────┘ │
-│        │               │                  │             │
-│        └───────────┬───┘                  │             │
-│                    │                      │             │
-│           ┌────────┴────────┐    ┌────────┴───────┐     │
-│           │  SOAR Platform  │◄───│ Vuln Feed API  │     │
-│           │ (Splunk SOAR /  │    │ (Qualys VMDR)  │     │
-│           │  Phantom)       │    └────────────────┘     │
-│           └────────┬────────┘                           │
-│                    │                                    │
-│     ┌──────────────┼──────────────┐                     │
-│     │              │              │                     │
-│  ┌──┴────┐   ┌─────┴────┐  ┌─────┴─────┐               │
-│  │Contain│   │  Enrich   │  │  Notify   │               │
-│  │ Host  │   │ Threat    │  │  SOC Team │               │
-│  │       │   │ Intel     │  │           │               │
-│  └───────┘   └──────────┘  └───────────┘               │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="assets/soc-architecture.svg" alt="SOC Architecture Diagram" width="100%"/>
+</p>
+
+## Detection & Response Pipeline
+
+<p align="center">
+  <img src="assets/detection-pipeline.svg" alt="Detection Pipeline" width="100%"/>
+</p>
+
+---
 
 ## Log Sources & Data Pipeline
 
@@ -118,6 +103,10 @@ Custom detection rules organized by attack surface. Full SPL queries are availab
 ---
 
 ## SOAR Playbooks
+
+<p align="center">
+  <img src="assets/soar-workflow.svg" alt="SOAR Playbook Workflows" width="100%"/>
+</p>
 
 Automated incident response playbooks designed for Splunk SOAR (Phantom). Each playbook includes trigger conditions, enrichment steps, containment actions, and notification workflows.
 
