@@ -1,0 +1,99 @@
+// ==============================================================================
+// Endpoint Detection Rules — Splunk SPL
+// Author: Ryan Murphy
+// Platform: Splunk Enterprise / Splunk Cloud
+// Data Source: CrowdStrike Falcon / Sysmon / Windows Event Logs
+// ==============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 1. Encoded PowerShell Command Execution
+// MITRE ATT&CK: T1059.001 — Command and Scripting Interpreter: PowerShell
+// Severity: High
+// Description: Detects PowerShell execution with encoded or obfuscated commands
+//              commonly used by malware and post-exploitation frameworks.
+// -----------------------------------------------------------------------------
+
+index=crowdstrike OR index=sysmon EventCode=1
+    (FileName="powershell.exe" OR FileName="pwsh.exe" OR OriginalFileName="PowerShell.EXE")
+| where match(CommandLine, "(?i)(-enc\s|-encodedcommand\s|-e\s+[A-Za-z0-9+/=]{20,})")
+    OR match(CommandLine, "(?i)(frombase64string|invoke-expression|iex\s*\(|downloadstring|downloadfile)")
+    OR match(CommandLine, "(?i)(-w\s+hidden|-nop\s|-noni\s|-windowstyle\s+hidden)")
+| eval suspicion_flags=mvappend(
+    if(match(CommandLine, "(?i)-enc"), "Encoded Command", null()),
+    if(match(CommandLine, "(?i)frombase64string"), "Base64 Decoding", null()),
+    if(match(CommandLine, "(?i)downloadstring"), "Remote Download", null()),
+    if(match(CommandLine, "(?i)hidden"), "Hidden Window", null())
+)
+| eval cmd_length=len(CommandLine)
+| table _time, ComputerName, User, CommandLine, suspicion_flags, cmd_length, ParentImage
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 2. LSASS Memory Access (Credential Dumping)
+// MITRE ATT&CK: T1003.001 — OS Credential Dumping: LSASS Memory
+// Severity: Critical
+// Description: Detects processes accessing LSASS memory, commonly associated
+//              with credential dumping tools like Mimikatz.
+// -----------------------------------------------------------------------------
+
+index=sysmon EventCode=10 TargetImage="*\\lsass.exe"
+| where NOT SourceImage IN (
+    "C:\\Windows\\System32\\csrss.exe",
+    "C:\\Windows\\System32\\lsm.exe",
+    "C:\\Windows\\System32\\svchost.exe",
+    "C:\\Windows\\System32\\wininit.exe",
+    "C:\\Program Files\\*\\MsMpEng.exe"
+)
+| eval granted_access_hex='GrantedAccess'
+| eval suspicious=case(
+    granted_access_hex=="0x1010", "HIGH — Read process memory (Mimikatz signature)",
+    granted_access_hex=="0x1FFFFF", "CRITICAL — Full access to LSASS",
+    granted_access_hex LIKE "0x14%", "MEDIUM — Query + Read access",
+    1==1, "LOW — Other access pattern")
+| table _time, ComputerName, SourceImage, SourceUser, GrantedAccess, suspicious, CallTrace
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 3. Suspicious Scheduled Task Creation
+// MITRE ATT&CK: T1053.005 — Scheduled Task/Job: Scheduled Task
+// Severity: Medium
+// Description: Detects creation of scheduled tasks that may indicate
+//              persistence or lateral movement.
+// -----------------------------------------------------------------------------
+
+index=wineventlog EventCode=4698 OR (index=sysmon EventCode=1 Image="*\\schtasks.exe")
+| eval task_action=coalesce(TaskContent, CommandLine)
+| where match(task_action, "(?i)(powershell|cmd\.exe|wscript|cscript|mshta|regsvr32|rundll32|certutil|bitsadmin)")
+    OR match(task_action, "(?i)(http://|https://|\\\\\\\\)")
+    OR match(task_action, "(?i)(appdata|temp|public|programdata)")
+| eval suspicion=case(
+    match(task_action, "(?i)powershell.*-enc"), "HIGH — Encoded PowerShell in task",
+    match(task_action, "(?i)http"), "HIGH — Task downloads from URL",
+    match(task_action, "(?i)appdata|temp"), "MEDIUM — Task runs from suspicious path",
+    1==1, "MEDIUM — Task uses suspicious binary")
+| table _time, ComputerName, User, TaskName, task_action, suspicion
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 4. Lateral Movement via WMI
+// MITRE ATT&CK: T1047 — Windows Management Instrumentation
+// Severity: High
+// Description: Detects WMI-based remote process creation, commonly used for
+//              lateral movement by tools like wmiexec and Impacket.
+// -----------------------------------------------------------------------------
+
+index=sysmon EventCode=1
+    (ParentImage="*\\WmiPrvSE.exe" OR Image="*\\WMIC.exe")
+| where NOT Image IN (
+    "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+    "C:\\Windows\\System32\\wbem\\WMIC.exe",
+    "C:\\Windows\\System32\\dllhost.exe"
+)
+| eval remote_exec=if(ParentImage LIKE "%WmiPrvSE%", "YES — Remote WMI execution", "Local WMIC usage")
+| where remote_exec LIKE "%Remote%"
+| table _time, ComputerName, User, ParentImage, Image, CommandLine, remote_exec
+| sort -_time

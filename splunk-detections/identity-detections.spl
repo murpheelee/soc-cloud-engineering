@@ -1,0 +1,117 @@
+// ==============================================================================
+// Identity & Access Detection Rules — Splunk SPL
+// Author: Ryan Murphy
+// Platform: Splunk Enterprise / Splunk Cloud
+// ==============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 1. Impossible Travel — Login from Two Distant Locations
+// MITRE ATT&CK: T1078 — Valid Accounts
+// Severity: High
+// Description: Detects a user logging in from two geographically distant
+//              locations within a time window that makes physical travel impossible.
+// -----------------------------------------------------------------------------
+
+index=okta OR index=azure_signin
+| eval user=coalesce('actor.alternateId', 'userPrincipalName')
+| eval src_ip=coalesce('client.ipAddress', 'ipAddress')
+| eval city=coalesce('client.geographicalContext.city', 'location.city')
+| eval country=coalesce('client.geographicalContext.country', 'location.countryOrRegion')
+| eval lat=coalesce('client.geographicalContext.geolocation.lat', 'location.geoCoordinates.latitude')
+| eval lon=coalesce('client.geographicalContext.geolocation.lon', 'location.geoCoordinates.longitude')
+| sort user, _time
+| streamstats current=f last(_time) as prev_time, last(lat) as prev_lat, last(lon) as prev_lon, last(city) as prev_city, last(country) as prev_country, last(src_ip) as prev_ip by user
+| where isnotnull(prev_time)
+| eval time_diff_hours=round((_time - prev_time) / 3600, 2)
+| eval distance_km=round(3959 * acos(sin(lat * 3.14159/180) * sin(prev_lat * 3.14159/180) + cos(lat * 3.14159/180) * cos(prev_lat * 3.14159/180) * cos((prev_lon - lon) * 3.14159/180)) * 1.60934, 0)
+| eval speed_kmh=if(time_diff_hours>0, round(distance_km / time_diff_hours, 0), 9999)
+| where speed_kmh > 800 AND distance_km > 500
+| table _time, user, prev_city, prev_country, prev_ip, city, country, src_ip, distance_km, time_diff_hours, speed_kmh
+| sort -speed_kmh
+
+
+// -----------------------------------------------------------------------------
+// 2. MFA Disabled for User Account
+// MITRE ATT&CK: T1556.006 — Modify Authentication Process: MFA
+// Severity: High
+// Description: Detects when MFA is removed or disabled for a user account.
+// -----------------------------------------------------------------------------
+
+index=azure_audit operationName="Delete strongAuthenticationPhoneAppDetail"
+    OR (operationName="Update user" AND targetResources{}.modifiedProperties{}.displayName="StrongAuthenticationMethod")
+| eval affected_user=mvindex('targetResources{}.userPrincipalName', 0)
+| eval modified_by='initiatedBy.user.userPrincipalName'
+| table _time, modified_by, affected_user, operationName, result
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 3. Brute Force Against Cloud SSO
+// MITRE ATT&CK: T1110.001 — Brute Force: Password Guessing
+// Severity: High
+// Description: Detects multiple failed login attempts to cloud SSO followed
+//              by a success, indicating a potential brute force attack.
+// -----------------------------------------------------------------------------
+
+index=okta outcome.result=FAILURE OR outcome.result=SUCCESS
+    eventType="user.session.start"
+| eval user='actor.alternateId'
+| eval result='outcome.result'
+| eval src_ip='client.ipAddress'
+| stats
+    count(eval(result=="FAILURE")) as failures,
+    count(eval(result=="SUCCESS")) as successes,
+    earliest(_time) as first_attempt,
+    latest(_time) as last_attempt
+    by user, src_ip
+| where failures >= 10 AND successes > 0
+| eval attack_window_min=round((last_attempt - first_attempt) / 60, 1)
+| eval risk=case(
+    failures>=50, "CRITICAL",
+    failures>=25, "HIGH",
+    failures>=10, "MEDIUM",
+    1==1, "LOW")
+| table first_attempt, user, src_ip, failures, successes, attack_window_min, risk
+| sort -failures
+
+
+// -----------------------------------------------------------------------------
+// 4. Service Account Login from New Source
+// MITRE ATT&CK: T1078.004 — Valid Accounts: Cloud Accounts
+// Severity: Medium
+// Description: Detects service accounts authenticating from an IP address
+//              not seen in the baseline (last 30 days).
+// -----------------------------------------------------------------------------
+
+index=azure_signin userType="servicePrincipal" OR userType="Application"
+| eval user='appDisplayName'
+| eval src_ip='ipAddress'
+| eval current_time=_time
+| join type=left user [
+    | search index=azure_signin userType="servicePrincipal" OR userType="Application" earliest=-30d latest=-1d
+    | eval user='appDisplayName'
+    | stats values(ipAddress) as known_ips by user
+]
+| where NOT src_ip IN (known_ips)
+| table _time, user, src_ip, known_ips, location.city, location.countryOrRegion
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 5. Privileged Role Assigned Outside PIM
+// MITRE ATT&CK: T1098 — Account Manipulation
+// Severity: High
+// Description: Detects when a privileged Azure AD role is permanently assigned
+//              instead of through Privileged Identity Management (PIM).
+// -----------------------------------------------------------------------------
+
+index=azure_audit operationName="Add member to role"
+| spath output=role_name path=targetResources{}.modifiedProperties{}.newValue
+| where role_name LIKE "%Admin%" OR role_name LIKE "%Global%"
+| eval assigned_by='initiatedBy.user.userPrincipalName'
+| eval target_user=mvindex('targetResources{}.userPrincipalName', 0)
+| eval assignment_type=if(operationName LIKE "%eligible%", "PIM (Eligible)", "Permanent (Direct)")
+| where assignment_type="Permanent (Direct)"
+| table _time, assigned_by, target_user, role_name, assignment_type
+| sort -_time

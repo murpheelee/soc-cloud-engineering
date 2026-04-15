@@ -1,0 +1,140 @@
+// ==============================================================================
+// Cloud Security Detection Rules — Splunk SPL
+// Author: Ryan Murphy
+// Platform: Splunk Enterprise / Splunk Cloud
+// ==============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 1. AWS Root Account Console Login
+// MITRE ATT&CK: T1078.004 — Valid Accounts: Cloud Accounts
+// Severity: Critical
+// Description: Detects any AWS root account console login. Root accounts should
+//              never be used for day-to-day operations.
+// -----------------------------------------------------------------------------
+
+index=aws_cloudtrail eventName=ConsoleLogin
+    userIdentity.type=Root
+| eval login_status=if('responseElements.ConsoleLogin'=="Success", "SUCCESS", "FAILURE")
+| eval mfa_used=if('additionalEventData.MFAUsed'=="Yes", "Yes", "No")
+| table _time, sourceIPAddress, login_status, mfa_used, awsRegion, userAgent
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 2. S3 Bucket Made Public
+// MITRE ATT&CK: T1530 — Data from Cloud Storage
+// Severity: Critical
+// Description: Detects when an S3 bucket ACL or policy is changed to allow
+//              public access.
+// -----------------------------------------------------------------------------
+
+index=aws_cloudtrail eventName IN ("PutBucketAcl", "PutBucketPolicy", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock")
+| spath output=bucket_name path=requestParameters.bucketName
+| spath output=acl_grants path=requestParameters.AccessControlPolicy.AccessControlList.Grant{}.Grantee.URI
+| where acl_grants="*AllUsers*" OR acl_grants="*AuthenticatedUsers*" OR eventName="DeleteBucketPublicAccessBlock"
+| eval risk=case(
+    eventName=="DeleteBucketPublicAccessBlock", "CRITICAL — Public access block removed",
+    acl_grants LIKE "%AllUsers%", "CRITICAL — Bucket open to entire internet",
+    acl_grants LIKE "%AuthenticatedUsers%", "HIGH — Bucket open to all AWS accounts",
+    1==1, "MEDIUM")
+| table _time, userIdentity.arn, bucket_name, eventName, risk, sourceIPAddress, awsRegion
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 3. Security Group Modified to Allow 0.0.0.0/0
+// MITRE ATT&CK: T1562.007 — Impair Defenses: Disable or Modify Cloud Firewall
+// Severity: High
+// Description: Detects when a security group ingress rule is added that allows
+//              traffic from any IP address (0.0.0.0/0 or ::/0).
+// -----------------------------------------------------------------------------
+
+index=aws_cloudtrail eventName IN ("AuthorizeSecurityGroupIngress", "ModifySecurityGroupRules")
+| spath output=cidr_ip path=requestParameters.ipPermissions.items{}.ipRanges.items{}.cidrIp
+| spath output=cidr_ipv6 path=requestParameters.ipPermissions.items{}.ipv6Ranges.items{}.cidrIpv6
+| where cidr_ip="0.0.0.0/0" OR cidr_ipv6="::/0"
+| spath output=from_port path=requestParameters.ipPermissions.items{}.fromPort
+| spath output=to_port path=requestParameters.ipPermissions.items{}.toPort
+| spath output=sg_id path=requestParameters.groupId
+| eval port_range=from_port."-".to_port
+| eval risk=case(
+    from_port==22 OR from_port==3389, "CRITICAL — SSH/RDP exposed to internet",
+    from_port==0 AND to_port==65535, "CRITICAL — All ports exposed to internet",
+    1==1, "HIGH — Port ".port_range." exposed to internet")
+| table _time, userIdentity.arn, sg_id, port_range, risk, sourceIPAddress
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 4. Azure AD Conditional Access Policy Disabled
+// MITRE ATT&CK: T1556 — Modify Authentication Process
+// Severity: High
+// Description: Detects when a Conditional Access policy is disabled or deleted,
+//              potentially weakening authentication controls.
+// -----------------------------------------------------------------------------
+
+index=azure_audit category="Policy"
+    operationName IN ("Update conditional access policy", "Delete conditional access policy")
+| spath output=policy_name path=targetResources{}.displayName
+| spath output=modified_props path=targetResources{}.modifiedProperties{}
+| eval action=case(
+    operationName LIKE "%Delete%", "DELETED",
+    modified_props LIKE "%Disabled%", "DISABLED",
+    1==1, "MODIFIED")
+| where action IN ("DELETED", "DISABLED")
+| table _time, initiatedBy.user.userPrincipalName, policy_name, action, operationName
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 5. CloudTrail Logging Disabled
+// MITRE ATT&CK: T1562.008 — Impair Defenses: Disable Cloud Logs
+// Severity: Critical
+// Description: Detects when CloudTrail logging is stopped or a trail is deleted.
+//              This is a high-confidence indicator of an attacker covering tracks.
+// -----------------------------------------------------------------------------
+
+index=aws_cloudtrail eventName IN ("StopLogging", "DeleteTrail", "UpdateTrail")
+| eval risk=case(
+    eventName=="StopLogging", "CRITICAL — CloudTrail logging stopped",
+    eventName=="DeleteTrail", "CRITICAL — CloudTrail trail deleted",
+    eventName=="UpdateTrail", "HIGH — CloudTrail configuration modified")
+| spath output=trail_name path=requestParameters.name
+| table _time, userIdentity.arn, eventName, trail_name, risk, sourceIPAddress, awsRegion
+| sort -_time
+
+
+// -----------------------------------------------------------------------------
+// 6. Activity in Unauthorized AWS Region
+// MITRE ATT&CK: T1535 — Unused/Unsupported Cloud Regions
+// Severity: Medium
+// Description: Detects API calls in AWS regions not approved for use.
+//              Attackers often spin up resources in unused regions to avoid detection.
+// -----------------------------------------------------------------------------
+
+index=aws_cloudtrail
+    eventName IN ("RunInstances", "CreateFunction*", "CreateBucket", "CreateStack")
+| where NOT awsRegion IN ("us-east-1", "us-east-2", "us-west-2", "eu-west-1")
+| stats count, values(eventName) as actions, dc(eventName) as unique_actions by awsRegion, userIdentity.arn
+| where count > 0
+| sort -count
+| rename userIdentity.arn as user
+
+
+// -----------------------------------------------------------------------------
+// 7. IAM Policy Allows Full Admin (*)
+// MITRE ATT&CK: T1098.001 — Account Manipulation: Additional Cloud Credentials
+// Severity: High
+// Description: Detects when an IAM policy is created or attached that grants
+//              full administrative access (Action: *, Resource: *).
+// -----------------------------------------------------------------------------
+
+index=aws_cloudtrail eventName IN ("CreatePolicy", "PutUserPolicy", "PutGroupPolicy", "PutRolePolicy", "AttachUserPolicy", "AttachGroupPolicy", "AttachRolePolicy")
+| spath output=policy_doc path=requestParameters.policyDocument
+| where policy_doc LIKE "%\"Effect\":\"Allow\"%"
+    AND policy_doc LIKE "%\"Action\":\"*\"%"
+    AND policy_doc LIKE "%\"Resource\":\"*\"%"
+| eval risk="HIGH — Full admin (Action:*, Resource:*) policy attached"
+| table _time, userIdentity.arn, eventName, risk, sourceIPAddress
+| sort -_time
